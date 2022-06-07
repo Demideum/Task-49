@@ -1,0 +1,284 @@
+namespace Task_49
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Aquarium aquarium = new Aquarium();
+            bool isWork = true;
+
+            while (isWork)
+            {
+                aquarium.ShowAquarium();
+                Console.SetCursorPosition(0, 15);
+                Console.WriteLine("\nДобро пожаловать в Аквариум!" +
+                    "\n\n1. Добавить рыбку." +
+                    "\n2. Убрать рыбку из аквариума." +
+                    "\n3. Выход.");
+                Console.Write("\nДействие: ");
+                string userInput = Console.ReadLine();
+
+                switch (userInput)
+                {
+                    case "1":
+                        aquarium.AddFish();
+                        break;
+                    case "2":
+                        aquarium.RemoveFish();
+                        break;
+                    case "3":
+                        isWork = false;
+                        break;
+                    default:
+                        Console.WriteLine("Ошибка. Введены не коректные данные");
+                        break;
+                }
+                aquarium.UpdateHealthFish();
+                aquarium.RemoveDeadFish();
+                Console.Clear();
+            }
+        }
+    }
+
+    class Aquarium
+    {
+        private Random _random = new Random();
+        private List<Fish> _fishes = new List<Fish>();
+        private int _countOfFish = 10;
+
+        public Aquarium()
+        {
+            CreateNewAquarium(_countOfFish, _fishes);
+        }
+        public void AddFish()
+        {
+            string name;
+            int health;
+
+            if (_countOfFish <= _fishes.Count)
+            {
+                Console.Clear();
+                Console.WriteLine("В аквариуме нету места");
+                Console.ReadKey();
+            }
+            else
+            {
+                Console.Write("Введите имя рыбки: ");
+                name = GetInputText();
+                Console.Write("Введите колличество жизней до 30: ");
+                health = GetInputHealth();
+
+                if (name == null || health == 0)
+                {
+                    Console.WriteLine("Ошибка. Введены не коректные данные");
+                }
+                else
+                {
+                    _fishes.Add(new Fish(name, health));
+                }
+            }
+        }
+
+        public void RemoveFish()
+        {
+            if (TryGetFish(out Fish fish))
+            {
+                _fishes.Remove(fish);
+            }
+        }
+
+        public void ShowAquarium()
+        {
+            int numberFish = 1;
+            Console.WriteLine($"Рыб в аквариуме - {_fishes.Count}");
+
+            foreach (var fish in _fishes)
+            {
+                Console.Write($"\n{numberFish++}. {fish.Name}");
+
+                fish.DrawHealthBar(fish.Health, ConsoleColor.Red, numberFish, '_');
+            }
+        }
+
+        public void RemoveDeadFish()
+        {
+            for (int i = 0; i < _fishes.Count; i++)
+            {
+                if (_fishes[i].IsALive == false)
+                {
+                    _fishes.Remove(_fishes[i]);
+                }
+            }
+        }
+
+        public void UpdateHealthFish()
+        {
+            foreach (var fish in _fishes)
+            {
+                fish.Live();
+            }
+        }
+
+        private void CreateNewAquarium(int _countOfFish, List<Fish> Fishes)
+        {
+            for (int i = 0; i < _countOfFish; i++)
+            {
+                Fishes.Add(GetFish());
+            }
+
+        }
+
+        private Fish GetFish()
+        {
+            int minimumNumberClassFish = 0;
+            int maximumNumberClassFish = 3;
+            int newFish = _random.Next(minimumNumberClassFish, maximumNumberClassFish);
+
+            if (newFish == 1)
+            {
+                return new BigFish("Сом", 10, 2);
+            }
+            else if (newFish == 2)
+            {
+                return new MediumFish("Карась", 10);
+            }
+            else
+            {
+                return new LittleFish("Пескарь", 10, 2);
+            }
+        }
+
+        private bool TryGetFish(out Fish fish)
+        {
+            Console.Write("Введите номер рыбы: ");
+            bool isNumber = int.TryParse(Console.ReadLine(), out int inputNumberFish);
+
+            if (isNumber == false)
+            {
+                
+                Console.WriteLine("Ошибка! Вы ввели не коректные данные.");
+                Console.ReadKey();
+                fish = null;
+                return false;
+            }
+            else if (inputNumberFish > 0 && inputNumberFish - 1 < _fishes.Count)
+            {
+               
+                fish = _fishes[inputNumberFish - 1];
+                Console.WriteLine("Вы успешно убрали рыбу");
+                Console.ReadKey();
+                return true;
+            }
+            else
+            {
+               
+                Console.WriteLine("Рыбы с таким номером в акувариуме нету.");
+                Console.ReadKey();
+                fish = null;
+                return false;
+            }
+        }
+
+        private int GetInputHealth()
+        {
+            int maximumLength = 1;
+            int maximumHealth = 30;
+            bool isNumber = int.TryParse(Console.ReadLine(), out int health);
+
+            if (isNumber == true && health >= maximumLength && health <= maximumHealth)
+            {
+                return health;
+            }
+            else
+            {
+                Console.WriteLine("Введены некоретные данный поторите попытку.");
+                Console.ReadKey();
+                health = 0;
+                return health;
+            }
+        }
+
+        private string GetInputText()
+        {
+            string text = Console.ReadLine();
+
+            foreach (char symbol in text)
+            {
+                if (char.IsLetter(symbol) == false)
+                {
+                    Console.WriteLine("Введены некоретные данный поторите попытку.");
+                    return null;
+                }
+            }
+            return text;
+        }
+
+        class Fish
+        {
+            private int _lethalHealth = 0;
+
+            public string Name { get; protected set; }
+            public int Health { get; protected set; }
+
+            public bool IsALive
+            {
+                get
+                {
+                    return _lethalHealth < Health;
+                }
+                private set { }
+            }
+
+            public Fish(string name, int health)
+            {
+                Name = name;
+                Health = health;
+            }
+
+            public void DrawHealthBar(int maxValue, ConsoleColor color, int position, char symbol = ' ')
+            {
+                ConsoleColor defaultColor = Console.BackgroundColor;
+                string bar = "";
+
+                for (int i = 0; i < maxValue; i++)
+                {
+                    bar += symbol;
+                }
+
+                Console.SetCursorPosition(12, position);
+                Console.Write('[');
+                Console.BackgroundColor = color;
+                Console.Write(bar);
+                Console.BackgroundColor = defaultColor;
+
+                bar = "";
+
+                for (int i = maxValue; i < maxValue; i++)
+                {
+                    bar += symbol;
+                }
+                Console.Write($"{bar}] Здоровье: {maxValue}");
+            }
+
+            public void Live()
+            {
+                Health--;
+            }
+        }
+
+        class BigFish : Fish
+        {
+            public BigFish(string name, int health, int healthBuff) : base(name, health * healthBuff) { }
+        }
+
+        class MediumFish : Fish
+        {
+            public MediumFish(string name, int health) : base(name, health) { }
+        }
+
+        class LittleFish : Fish
+        {
+            public LittleFish(string name, int health, int healthBuff) : base(name, health / healthBuff) { }
+        }
+    }
+}
